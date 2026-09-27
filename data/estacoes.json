@@ -1,0 +1,92 @@
+[
+  {
+    "codigo": "BPE-001",
+    "nome": "Estacao Marco Zero",
+    "localizacao": "Praca Rio Branco",
+    "bairro": "Recife Antigo",
+    "capacidade": "20",
+    "latitude": "-8.0628",
+    "longitude": "-34.8712"
+  },
+  {
+    "codigo": "BPE-002",
+    "nome": "Estacao Boa Viagem Sul",
+    "localizacao": "Av. Boa Viagem 500",
+    "bairro": "Boa Viagem",
+    "capacidade": "16",
+    "latitude": "-8.1300",
+    "longitude": "-34.9008"
+  },
+  {
+    "codigo": "BPE-003",
+    "nome": "Estacao Boa Viagem Norte",
+    "localizacao": "Av. Boa Viagem 3000",
+    "bairro": "Boa Viagem",
+    "capacidade": "16",
+    "latitude": "-8.1050",
+    "longitude": "-34.8895"
+  },
+  {
+    "codigo": "BPE-004",
+    "nome": "Estacao Parque da Jaqueira",
+    "localizacao": "Rua Santos Mars 100",
+    "bairro": "Jaqueira",
+    "capacidade": "12",
+    "latitude": "-8.0430",
+    "longitude": "-34.9020"
+  },
+  {
+    "codigo": "BPE-005",
+    "nome": "Estacao Derby",
+    "localizacao": "Av. Agamenon Magalhaes 200",
+    "bairro": "Derby",
+    "capacidade": "14",
+    "latitude": "-8.0610",
+    "longitude": "-34.9060"
+  },
+  {
+    "codigo": "BPE-006",
+    "nome": "Estacao Boa Vista",
+    "localizacao": "Rua da Aurora 400",
+    "bairro": "Boa Vista",
+    "capacidade": "10",
+    "latitude": "-8.0620",
+    "longitude": "-34.8815"
+  },
+  {
+    "codigo": "BPE-007",
+    "nome": "Estacao Casa Forte",
+    "localizacao": "Rua Doutor Nilo Dornelas 50",
+    "bairro": "Casa Forte",
+    "capacidade": "10",
+    "latitude": "-8.0330",
+    "longitude": "-34.9145"
+  },
+  {
+    "codigo": "BPE-008",
+    "nome": "Estacao Pina",
+    "localizacao": "Av. Antonio de Goes 150",
+    "bairro": "Pina",
+    "capacidade": "12",
+    "latitude": "-8.0900",
+    "longitude": "-34.8800"
+  },
+  {
+    "codigo": "BPE-009",
+    "nome": "Estacao Conde da Boa Vista",
+    "localizacao": "Av. Conde da Boa Vista 800",
+    "bairro": "Boa Vista",
+    "capacidade": "14",
+    "latitude": "-8.0600",
+    "longitude": "-34.8880"
+  },
+  {
+    "codigo": "BPE-010",
+    "nome": "Estacao Espinheiro",
+    "localizacao": "Rua Vinte de Setembro 300",
+    "bairro": "Espinheiro",
+    "capacidade": "10",
+    "latitude": "-8.0480",
+    "longitude": "-34.8975"
+  }
+]
