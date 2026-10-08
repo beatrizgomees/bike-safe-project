@@ -52,6 +52,23 @@ def escolher_recurso(recursos, *preferencias):
                 return r
     return recursos[0] if recursos else None
 
+def buscar_registros(url_dataset, *preferencias, limit=5000):
+
+    recursos = listar_recursos(url_dataset)
+    recurso = escolher_recurso(recursos, *preferencias)
+    if recurso is None:
+        return []
+ 
+    resp = requests.get(
+        f"{BASE_URL}/api/3/action/datastore_search",
+        params={"resource_id": recurso["id"], "limit": limit},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    resultado = resp.json()["result"]
+    campos = [f["id"] for f in resultado["fields"]]
+    return [dict(zip(campos, linha)) for linha in resultado["records"]]
+
 
 def fetch_payload(recurso, limit=2000):
     
@@ -78,23 +95,33 @@ def fetch_payload(recurso, limit=2000):
     except requests.RequestException:
         return None
 
-
 def buscar_ciclovias():
-    recursos = listar_recursos(DATASETS["ciclovias"])
-    recurso = escolher_recurso(recursos, "detalhes da implantação", "csv")
-    return fetch_payload(recurso)
-
-
+    return buscar_registros(DATASETS["ciclovias"], "detalhes da implantação", "csv")
+ 
+ 
 def buscar_estacoes():
-    recursos = listar_recursos(DATASETS["estacoes"])
-    recurso = escolher_recurso(recursos, "bike pe", "csv")
-    return fetch_payload(recurso)
+    return buscar_registros(DATASETS["estacoes"], "bike pe", "csv")
+ 
+ 
+def buscar_acidentes():
+    return buscar_registros(DATASETS["acidentes"], "2024", "csv")
+
+# def buscar_ciclovias():
+#     recursos = listar_recursos(DATASETS["ciclovias"])
+#     recurso = escolher_recurso(recursos, "detalhes da implantação", "csv")
+#     return fetch_payload(recurso)
 
 
-def buscar_acidentes(ano=2024):
-    recursos = listar_recursos(DATASETS["acidentes"])
-    recurso = escolher_recurso(recursos, str(ano))
-    return fetch_payload(recurso)
+# def buscar_estacoes():
+#     recursos = listar_recursos(DATASETS["estacoes"])
+#     recurso = escolher_recurso(recursos, "bike pe", "csv")
+#     return fetch_payload(recurso)
+
+
+# def buscar_acidentes(ano=2024):
+#     recursos = listar_recursos(DATASETS["acidentes"])
+#     recurso = escolher_recurso(recursos, str(ano))
+#     return fetch_payload(recurso)
 
 
 
@@ -107,8 +134,6 @@ def _para_float(valor):
         return 0.0
 
 def filtrar_acidentes_com_bicicleta(registros):
-    """Retorna só os acidentes em que houve envolvimento de ciclista
-    (campo "ciclista" > 0, ex: "1,0")."""
     return [r for r in registros if _para_float(r.get("ciclista")) > 0]
 
 
