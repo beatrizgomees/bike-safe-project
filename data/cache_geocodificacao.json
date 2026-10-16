@@ -1,0 +1,52 @@
+{
+"AV CAXANGA|": {
+"lat": -8.0307286,
+"lon": -34.956594,
+"precisao": "rua"
+},
+"RUA JOSE BONIFACIO|1315": {
+"lat": -8.0401228,
+"lon": -34.9101499,
+"precisao": "endereco"
+},
+"AV BEBERIBE|": {
+"lat": -8.0044738,
+"lon": -34.8951262,
+"precisao": "rua"
+},
+"AV CRUZ CABUGA|": {
+"lat": -8.0406055,
+"lon": -34.8720553,
+"precisao": "rua"
+},
+"RUA SAO MIGUEL|516": {
+"lat": -8.0801692,
+"lon": -34.9113762,
+"precisao": "endereco"
+},
+"AV MAURICIO DE NASSAU|243": {
+"lat": -8.0375541,
+"lon": -34.9334897,
+"precisao": "endereco"
+},
+"RUA CORREGO DA JAQUEIRA|8": {
+"lat": -8.0076771,
+"lon": -34.9014075,
+"precisao": "endereco"
+},
+"AV DANTAS BARRETO|": {
+"lat": -8.066974,
+"lon": -34.8795079,
+"precisao": "rua"
+},
+"AV CAXANGA|642": {
+"lat": -8.0537621,
+"lon": -34.9145394,
+"precisao": "endereco"
+},
+"AV BEIRA RIO|": {
+"lat": -8.0670274,
+"lon": -34.9009323,
+"precisao": "rua"
+}
+}

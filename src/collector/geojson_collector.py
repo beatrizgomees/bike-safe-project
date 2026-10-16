@@ -102,6 +102,54 @@ class GeoJSONCollector(BaseCollector):
 
         return pontos
 
+    @staticmethod
+    def _linhas(geometria):
+        """Lista de linhas, cada uma uma lista de (lat, lon). Pontos/polígonos são ignorados."""
+        tipo = (geometria or {}).get("type")
+        coords = (geometria or {}).get("coordinates") or []
+
+        if tipo == "LineString":
+            partes = [coords]
+        elif tipo == "MultiLineString":
+            partes = coords
+        else:
+            return []
+
+        return [[(p[1], p[0]) for p in parte] for parte in partes if len(parte) >= 2]
+
+    def buscar_trechos(self):
+        """Um registro por trecho (linha) da rota, com todos os pontos juntos:
+
+            {"rota", "bairro", "sentido", "tipo", "pontos": [(lat, lon), ...]}
+
+        Usado no cruzamento, que precisa da linha inteira (distância ponto-linha).
+        """
+        chave = (self.resource_id, "trechos")
+        cache = self._get_cache(chave)
+
+        if cache is not None:
+            return cache
+
+        trechos = []
+
+        for feature in self._baixar_features():
+            propriedades = {
+                normalizar_texto(k): v
+                for k, v in (feature.get("properties") or {}).items()
+            }
+
+            dados_rota = {
+                campo: self._pegar(propriedades, nomes)
+                for campo, nomes in self.CAMPOS.items()
+            }
+
+            for pontos in self._linhas(feature.get("geometry")):
+                trechos.append({**dados_rota, "pontos": pontos})
+
+        self._set_cache(chave, trechos)
+
+        return trechos
+
     def _pegar(self, propriedades, nomes):
         for nome in nomes:
             valor = propriedades.get(normalizar_texto(nome))
