@@ -1,0 +1,43 @@
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: bikesafe-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: bikesafe            # o schema.sql usa este nome
+    ports:
+      # porta no seu PC (para DBeaver/pgAdmin); mude se a 5432 já estiver em uso
+      - "${POSTGRES_PUBLISH_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # roda UMA vez, na primeira criação do volume
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d bikesafe"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    container_name: bikesafe-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      # dentro do Docker o banco é o serviço "postgres", não "localhost"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: bikesafe
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - .:/app                         # código ao vivo (sem rebuild) + data/ no seu PC
+    command: python main.py
+
+volumes:
+  pgdata:

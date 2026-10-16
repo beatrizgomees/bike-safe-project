@@ -120,7 +120,8 @@ class GeoJSONCollector(BaseCollector):
     def buscar_trechos(self):
         """Um registro por trecho (linha) da rota, com todos os pontos juntos:
 
-            {"rota", "bairro", "sentido", "tipo", "pontos": [(lat, lon), ...]}
+            {"rota", "bairro", "sentido", "tipo", "pontos": [(lat, lon), ...],
+             "propriedades": {todas as propriedades originais do arquivo}}
 
         Usado no cruzamento, que precisa da linha inteira (distância ponto-linha).
         """
@@ -144,7 +145,11 @@ class GeoJSONCollector(BaseCollector):
             }
 
             for pontos in self._linhas(feature.get("geometry")):
-                trechos.append({**dados_rota, "pontos": pontos})
+                trechos.append({
+                    **dados_rota,
+                    "pontos": pontos,
+                    "propriedades": feature.get("properties") or {},
+                })
 
         self._set_cache(chave, trechos)
 
