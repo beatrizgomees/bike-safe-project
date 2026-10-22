@@ -1,12 +1,12 @@
-"""Deixa o PostgreSQL pronto sem você digitar nada de Docker.
+"""Deixa a infraestrutura pronta (PostgreSQL + Mosquitto) sem você digitar Docker.
 
-preparar_banco():
+preparar_infra():
   1. confere se o Docker está instalado e rodando;
-  2. sobe o serviço `postgres` do docker-compose e espera ficar saudável;
+  2. sobe `postgres` e `mosquitto` do docker-compose e espera ficarem saudáveis;
   3. aplica o schema (idempotente: pode rodar sempre);
-  4. aponta as variáveis POSTGRES_HOST/PORT para o seu PC, para o Banco() conectar.
+  4. aponta POSTGRES_HOST/PORT e MQTT_HOST/PORT para o seu PC.
 
-Dentro do container do compose (serviço `app`) não faz nada: o banco já está lá.
+Dentro do container do compose (serviço `app`) não faz nada: tudo já está lá.
 """
 import os
 import subprocess
@@ -54,7 +54,7 @@ def achar_schema():
     )
 
 
-def preparar_banco():
+def preparar_infra():
     if em_docker():
         return
 
@@ -74,16 +74,17 @@ def preparar_banco():
             "e execute de novo."
         )
 
-    print("Subindo o PostgreSQL (docker compose)...")
+    print("Subindo PostgreSQL e Mosquitto (docker compose)...")
 
     # sem capturar a saída: na primeira vez baixa a imagem e você vê o progresso
-    subida = _docker("compose", "up", "-d", "--wait", "postgres", capturar=False)
+    subida = _docker("compose", "up", "-d", "--wait", "postgres", "mosquitto", capturar=False)
 
     if subida.returncode != 0:
         raise RuntimeError(
-            "Não consegui subir o postgres. Veja a mensagem acima. Causas comuns: "
-            "porta 5432 ocupada (pare o container antigo ou defina POSTGRES_PUBLISH_PORT "
-            "no .env) ou POSTGRES_PASSWORD ausente no .env."
+            "Não consegui subir os serviços. Veja a mensagem acima. Causas comuns: "
+            "porta 5432 ou 1883 ocupada (pare o container antigo ou defina "
+            "POSTGRES_PUBLISH_PORT / MQTT_PUBLISH_PORT no .env) ou POSTGRES_PASSWORD "
+            "ausente no .env."
         )
 
     schema = achar_schema()
@@ -104,5 +105,7 @@ def preparar_banco():
     # o programa roda no seu PC: conecta no banco pela porta publicada
     os.environ["POSTGRES_HOST"] = "localhost"
     os.environ["POSTGRES_PORT"] = os.getenv("POSTGRES_PUBLISH_PORT", "5432")
+    os.environ["MQTT_HOST"] = "localhost"
+    os.environ["MQTT_PORT"] = os.getenv("MQTT_PUBLISH_PORT", "1883")
 
-    print("Banco pronto.\n")
+    print("Infraestrutura pronta.\n")

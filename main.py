@@ -1,57 +1,68 @@
-from src.infra.docker_db import preparar_banco
+"""Orquestrador: sobe a infraestrutura e roda a arquitetura inteira.
+
+    Bases (A, E, C) -> SV --MQTT--> MP --> Banco
+                          \\--MQTT--> Middleware --MQTT--> Dashboard / Mobile
+
+Cada componente é um processo separado (como seria em produção); este arquivo
+só liga tudo para você clicar em executar. Para rodar um componente sozinho:
+    python -m src.processing.modulo_processamento
+    python -m src.middleware.middleware
+    python -m src.sensor.sensor_virtual
+"""
+import subprocess
+import sys
+import time
+
+from src.infra.docker_db import RAIZ, preparar_infra
 
 # ---------------------------------------------------------------- ajustes
-LIMITE = None      # None = todos os acidentes com bike. Comece com 50 para testar.
+LIMITE_CRUZAMENTO = None   # acidentes com bike geocodificados/cruzados. None = todos.
+LIMITE_EVENTOS = None      # acidentes transmitidos em "tempo real" ao Middleware.
+INTERVALO_S = 2.0        # segundos entre um evento e outro.
 # -----------------------------------------------------------------------
 
 
+def iniciar_processo(modulo):
+    return subprocess.Popen([sys.executable, "-m", modulo], cwd=RAIZ)
+
+
 def main():
-    # 1) sobe o PostgreSQL no Docker e aplica o schema (se já estiver ok, é rápido)
-    preparar_banco()
+    preparar_infra()
 
-    # imports depois do preparar_banco: ele ajusta as variáveis de conexão
-    from src.collector.acidentes_collector import AcidentesCollector
-    from src.collector.ciclovias_collector import MalhaCicloviariaCollector
-    from src.collector.estacoes_collector import EstacoesBikeCollector
-    from src.collector.rotas_collector import (
-        RotasPermanentesCollector,
-        RotasOperacionaisCollector,
-    )
-    from src.processing.acidentes_ciclovias import CruzamentoAcidentesCiclovias
-    from src.database.banco import Banco
+    # imports depois do preparar_infra: ele ajusta as variáveis de conexão
+    from src.sensor.sensor_virtual import SensorVirtual
 
-    cruzamento = CruzamentoAcidentesCiclovias(
-        acidentes=AcidentesCollector(),
-        redes={
-            "permanente": RotasPermanentesCollector(),
-            "operacional": RotasOperacionaisCollector(),
-        },
-        raio_m=30,
-        estacoes=EstacoesBikeCollector(),
-        raio_estacao_m=300,
-    )
+    processos = [
+        iniciar_processo("src.processing.modulo_processamento"),   # MP
+        iniciar_processo("src.middleware.middleware"),             # Middleware
+    ]
 
-    # 2) coleta e cruza
-    linhas = cruzamento.gerar(limite=LIMITE)
+    sv = SensorVirtual.padrao()
 
-    # 3) grava no banco
-    banco = Banco()
     try:
-        print("Bases completas:", cruzamento.salvar_dados_completos(
-            banco, malha=MalhaCicloviariaCollector()
-        ))
+        sv.iniciar()
+        sv.mqtt.aguardar_online(["mp", "middleware"])
 
-        cruzamento.salvar_banco(linhas, banco)
-        print("Cruzamento:", cruzamento.resumo(linhas))
+        # 1) SV -> MP: bases completas; o MP cruza e grava no banco
+        resposta = sv.publicar_bases(limite_cruzamento=LIMITE_CRUZAMENTO)
 
-        print(banco.consultar("""
-            SELECT rede,
-                   COUNT(*) FILTER (WHERE na_ciclovia) AS em_ciclovia,
-                   COUNT(*) AS total
-            FROM acidente_ciclovia GROUP BY rede
-        """))
+        if "erro" in resposta:
+            raise RuntimeError(f"O MP falhou: {resposta['erro']}")
+
+        print("\nMP concluiu:", resposta["resumo"], "\n")
+
+        # 2) SV -> Middleware: acidentes em fluxo, como se fossem de agora
+        sv.transmitir_acidentes(limite=LIMITE_EVENTOS, intervalo_s=INTERVALO_S)
+        time.sleep(3)   # deixa o Middleware repassar o último evento antes de encerrar
+
     finally:
-        banco.fechar()
+        sv.parar()
+
+        for p in processos:
+            p.terminate()
+
+        for p in processos:
+            p.wait(timeout=10)
 
 
 if __name__ == "__main__":

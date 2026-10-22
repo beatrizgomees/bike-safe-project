@@ -122,7 +122,9 @@ class BaseCollector:
 
             offset += len(pagina)
 
-            if len(pagina) < limit or offset >= resultado.get("total", offset):
+            total = resultado.get("total")
+
+            if total is not None and offset >= total:
                 break
 
         return registros

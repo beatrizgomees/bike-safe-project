@@ -13,12 +13,29 @@ services:
       - "${POSTGRES_PUBLISH_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # roda UMA vez, na primeira criação do volume
-      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d bikesafe"]
       interval: 5s
       timeout: 3s
+      retries: 20
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: bikesafe-mosquitto
+    restart: unless-stopped
+    ports:
+      - "${MQTT_PUBLISH_PORT:-1883}:1883"   # MQTT (SV, MP, Middleware)
+      - "9001:9001"                         # MQTT sobre WebSocket (dashboard/mobile)
+    configs:
+      # configuração embutida aqui mesmo: não depende de nenhum arquivo no seu PC
+      - source: mosquitto_conf
+        target: /mosquitto/config/mosquitto.conf
+    volumes:
+      - mqttdata:/mosquitto/data
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -t '$$SYS/#' -C 1 -i healthcheck -W 3 || exit 1"]
+      interval: 5s
+      timeout: 5s
       retries: 20
 
   app:
@@ -26,6 +43,8 @@ services:
     container_name: bikesafe-app
     depends_on:
       postgres:
+        condition: service_healthy
+      mosquitto:
         condition: service_healthy
     env_file: .env
     environment:
@@ -35,9 +54,28 @@ services:
       POSTGRES_DB: bikesafe
       POSTGRES_USER: ${POSTGRES_USER:-admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      MQTT_HOST: mosquitto
+      MQTT_PORT: "1883"
     volumes:
       - .:/app                         # código ao vivo (sem rebuild) + data/ no seu PC
     command: python main.py
 
+configs:
+  mosquitto_conf:
+    content: |
+      # MQTT puro (SV, MP, Middleware) e WebSocket (dashboard/mobile no navegador)
+      listener 1883
+      protocol mqtt
+
+      listener 9001
+      protocol websockets
+
+      # desenvolvimento local: sem usuário/senha
+      allow_anonymous true
+
+      persistence true
+      persistence_location /mosquitto/data/
+
 volumes:
   pgdata:
+  mqttdata:
