@@ -1,10 +1,7 @@
-"""Módulo de Processamento (MP): recebe as bases do SV pelo MQTT, faz o cruzamento
-(geocodificação, ciclovias, estações) e grava tudo no banco de dados.
-
-Rodar:  python -m src.processing.modulo_processamento
-"""
+import queue
 import threading
 import traceback
+from collections import deque
 
 from src.database.banco import Banco
 from src.mqtt import topicos
@@ -15,7 +12,7 @@ from src.processing.fontes_memoria import FonteAcidentes, FonteLista, FonteRede
 
 class ModuloProcessamento:
     def __init__(self, raio_m=30, raio_estacao_m=300, banco_factory=Banco,
-                 geocodificador=None, cliente=None):
+                 geocodificador=None, cliente=None, janela=20):
         self.raio_m = raio_m
         self.raio_estacao_m = raio_estacao_m
         self.banco_factory = banco_factory
@@ -28,10 +25,24 @@ class ModuloProcessamento:
         self._fim = None
         self._processando = False
 
+        # referências para tratar acidentes avulsos (preenchidas pela carga ou pelo banco)
+        self._cruz = None
+        self._trechos = None
+        self._estacoes = None
+        self._trava_ref = threading.Lock()
+
+        self._eventos = queue.Queue()
+        self._ultimos = deque(maxlen=janela)
+
     def iniciar(self):
         self.mqtt.assinar(f"{topicos.BASES}/#", self._receber)
+        self.mqtt.assinar(topicos.EVENTO_ACIDENTE, lambda topico, mensagem: self._eventos.put(mensagem))
         self.mqtt.conectar()
-        print("[MP] pronto, aguardando as bases do SV em", topicos.BASES)
+
+        # fora do callback do MQTT: geocodificar demora e não pode travar a conexão
+        threading.Thread(target=self._trabalhar_eventos, daemon=True).start()
+
+        print("[MP] pronto. Bases em", topicos.BASES, "| eventos em", topicos.EVENTO_ACIDENTE)
 
     # ------------------------------------------------------------------ recepção
     def _receber(self, topico, mensagem):
@@ -87,6 +98,11 @@ class ModuloProcessamento:
 
             linhas = cruzamento.gerar(limite=fim.get("limite"))
 
+            with self._trava_ref:  # a partir daqui o MP já sabe tratar acidentes avulsos
+                self._cruz = cruzamento
+                self._trechos = cruzamento._trechos()
+                self._estacoes = cruzamento.lista_estacoes()
+
             banco = self.banco_factory()
 
             try:
@@ -107,6 +123,101 @@ class ModuloProcessamento:
             self._processando = False
 
         self.mqtt.publicar(topicos.MP_CONCLUIDO, resposta)
+
+    # ------------------------------------------------- acidente a acidente -> dashboard
+    def _trabalhar_eventos(self):
+        while True:
+            mensagem = self._eventos.get()
+
+            try:
+                self._tratar_evento(mensagem)
+            except Exception:
+                traceback.print_exc()
+
+    def _tratar_evento(self, mensagem):
+        acidente = mensagem["dado"]
+        self._garantir_referencias()
+
+        linha = self._cruz.processar_um(acidente, self._trechos, self._estacoes)
+        self._cruz.geocodificador.salvar()
+
+        banco = self.banco_factory()
+
+        try:
+            banco.salvar_acidentes([acidente])
+            banco.salvar([linha], list(self._trechos))
+            banco.salvar_acidente_estacao([linha])
+        finally:
+            banco.fechar()
+
+        evento = self._montar_evento(mensagem, acidente, linha)
+        self.mqtt.publicar(topicos.APP_ACIDENTE, evento)
+
+        self._ultimos.append(evento)
+        self.mqtt.publicar(topicos.APP_ULTIMOS, list(self._ultimos), retain=True)
+
+        print(f"[MP] acidente {linha['protocolo']} tratado e enviado ao dashboard")
+
+    def _montar_evento(self, mensagem, acidente, linha):
+        estacao = None
+
+        if linha.get("estacao_codigo"):
+            estacao = {
+                "codigo": linha["estacao_codigo"],
+                "nome": linha["estacao_nome"],
+                "dist_m": linha["estacao_dist_m"],
+                "no_raio": linha["estacao_no_raio"],
+                "estacoes_no_raio": linha["estacoes_no_raio"],
+            }
+
+        return {
+            "seq": mensagem.get("seq"),
+            "total": mensagem.get("total"),
+            "acidente": {k: v for k, v in acidente.items() if not k.startswith("_")},
+            "analise": {
+                "local": {k: linha[k] for k in ("lat", "lon", "geo_precisao")},
+                "ciclovias": [
+                    {"rede": rede, "rota": linha[f"{rede}_rota"], "tipo": linha[f"{rede}_tipo"],
+                     "dist_m": linha[f"{rede}_dist_m"], "na_ciclovia": linha[f"na_ciclovia_{rede}"]}
+                    for rede in self._trechos
+                ],
+                "estacao": estacao,
+            },
+        }
+
+    def _garantir_referencias(self):
+        """Ciclovias e estações vêm da última carga; se o MP reiniciou, lê do banco."""
+        with self._trava_ref:
+            if self._cruz is not None:
+                return
+
+            banco = self.banco_factory()
+
+            try:
+                trechos = {}
+
+                for r in banco.consultar("SELECT rede, rota, tipo, geometria FROM ciclovia_trechos"):
+                    pontos = [(lat, lon) for lon, lat in r["geometria"]["coordinates"]]
+                    trechos.setdefault(r["rede"], []).append(
+                        {"rota": r["rota"], "tipo": r["tipo"], "pontos": pontos})
+
+                estacoes = banco.consultar(
+                    "SELECT codigo, nome, lat, lon FROM estacoes_bike WHERE coord_valida")
+            finally:
+                banco.fechar()
+
+            if not trechos:
+                raise RuntimeError("Sem ciclovias no banco: o SV precisa publicar as bases antes.")
+
+            self._cruz = CruzamentoAcidentesCiclovias(
+                acidentes=FonteLista([]),
+                redes={r: FonteRede(t) for r, t in trechos.items()},
+                geocodificador=self.geocodificador,
+                raio_m=self.raio_m,
+                estacoes=FonteLista([]),
+                raio_estacao_m=self.raio_estacao_m,
+            )
+            self._trechos, self._estacoes = trechos, estacoes
 
     def parar(self):
         self.mqtt.desconectar()

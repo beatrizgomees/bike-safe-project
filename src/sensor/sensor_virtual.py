@@ -1,11 +1,4 @@
-"""Sensor Virtual (SV): lê as bases A (acidentes), E (estações) e C (ciclovias),
-aplica os filtros e transporta os dados por MQTT.
 
-  1) publicar_bases()      -> bikesafe/bases/*       (consumido pelo Módulo de Processamento)
-  2) transmitir_acidentes()-> bikesafe/eventos/...   (consumido pelo Middleware)
-
-Rodar sozinho (com MP e Middleware já ligados):  python -m src.sensor.sensor_virtual
-"""
 import threading
 import time
 
@@ -16,8 +9,6 @@ from src.sensor.filtros import filtrar_com_ciclista, tem_ciclista
 
 class SensorVirtual:
     def __init__(self, acidentes, estacoes, redes, malha=None, cliente=None):
-        """acidentes/estacoes/malha: collectors com buscar_dados().
-        redes: {"permanente": collector_geojson, ...} com buscar_trechos()."""
         self.acidentes = acidentes
         self.estacoes = estacoes
         self.redes = redes
@@ -29,7 +20,6 @@ class SensorVirtual:
 
     @classmethod
     def padrao(cls):
-        """SV com os collectors do projeto."""
         from src.collector.acidentes_collector import AcidentesCollector
         from src.collector.ciclovias_collector import MalhaCicloviariaCollector
         from src.collector.estacoes_collector import EstacoesBikeCollector
@@ -62,8 +52,6 @@ class SensorVirtual:
 
     # ------------------------------------------------------------------- filtros
     def marcar_acidentes(self, acidentes):
-        """Não descarta nada: marca cada acidente com `_com_bike` (filtro do SV).
-        O MP guarda todos e cruza só os marcados."""
         return [{**a, "_com_bike": tem_ciclista(a)} for a in acidentes]
 
     def acidentes_com_bike(self):
@@ -113,9 +101,8 @@ class SensorVirtual:
 
         return len(registros)
 
-    # ------------------------------------------------- 2) eventos -> Middleware
+    # ------------------------------------------------- 2) eventos -> MP
     def transmitir_acidentes(self, limite=None, intervalo_s=2.0):
-        """Publica os acidentes com bike um por vez, como se acontecessem agora."""
         acidentes = self.acidentes_com_bike()
 
         if limite:
@@ -140,7 +127,7 @@ if __name__ == "__main__":
     sv.iniciar()
 
     try:
-        sv.mqtt.aguardar_online(["mp", "middleware"])
+        sv.mqtt.aguardar_online(["mp"])
         print("[SV] resposta do MP:", sv.publicar_bases(limite_cruzamento=50))
         sv.transmitir_acidentes(limite=20)
     finally:

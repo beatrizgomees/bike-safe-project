@@ -20,7 +20,6 @@ def decodificar(payload):
 
 
 class ClienteMQTT:
- 
 
     def __init__(self, nome, host=None, porta=None):
         self.nome = nome
