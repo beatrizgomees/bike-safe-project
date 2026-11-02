@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bike Safe</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root { --fundo:#f5f6f8; --card:#fff; --texto:#1c2430; --suave:#667085; --borda:#e1e4ea;
+          --alerta:#d92d20; --ok:#1570ef; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.4 system-ui, sans-serif; background:var(--fundo); color:var(--texto);
+         display:grid; grid-template-rows:auto 1fr; height:100vh; }
+  header { padding:12px 16px; background:var(--card); border-bottom:1px solid var(--borda);
+           display:flex; flex-wrap:wrap; gap:16px; align-items:center; }
+  h1 { font-size:18px; margin:0 12px 0 0; }
+  .num b { font-size:18px; display:block; }
+  .num span { color:var(--suave); font-size:12px; }
+  #estado { margin-left:auto; font-size:12px; color:var(--suave); }
+  main { display:grid; grid-template-columns:1fr 340px; min-height:0; }
+  #mapa { min-height:300px; }
+  aside { overflow:auto; border-left:1px solid var(--borda); background:var(--card); }
+  .item { padding:10px 14px; border-bottom:1px solid var(--borda); cursor:pointer; }
+  .item.novo { background:#fff4ed; }
+  .item small { color:var(--suave); display:block; }
+  .tag { display:inline-block; padding:1px 6px; border-radius:8px; font-size:11px; margin-right:4px; }
+  .tag.sim { background:#fee4e2; color:var(--alerta); }
+  .tag.nao { background:#e8f0fe; color:var(--ok); }
+  @media (max-width: 720px) { main { grid-template-columns:1fr; grid-template-rows:55vh 1fr; }
+                              aside { border-left:0; border-top:1px solid var(--borda); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Bike Safe</h1>
+  <div class="num"><b id="n-total">–</b><span>acidentes com bike</span></div>
+  <div class="num"><b id="n-geo">–</b><span>localizados no mapa</span></div>
+  <div class="num"><b id="n-ciclo">–</b><span>em ciclovia</span></div>
+  <div class="num"><b id="n-est">–</b><span>perto de estação</span></div>
+  <div id="estado">conectando ao broker…</div>
+</header>
+<main>
+  <div id="mapa"></div>
+  <aside id="lista"></aside>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script>
+// Histórico vem da API (banco); acidentes novos chegam em tempo real do MP pelo broker.
+const API = "";                                   // mesma origem da página
+const BROKER = `ws://${location.hostname}:9001`;  // MQTT sobre WebSocket (Mosquitto)
+
+const mapa = L.map("mapa").setView([-8.0476, -34.877], 12);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: "© OpenStreetMap"
+}).addTo(mapa);
+
+const lista = document.getElementById("lista");
+const vistos = new Map();   // protocolo -> marcador
+
+function naCiclovia(ciclovias) { return (ciclovias || []).some(c => c.na_ciclovia); }
+
+function descricao(a, ciclovias, estacao) {
+  const ciclo = (ciclovias || []).filter(c => c.dist_m != null)
+    .map(c => `${c.rede}: ${c.rota || "?"} (${Math.round(c.dist_m)} m)`).join("<br>");
+  const est = estacao ? `Estação ${estacao.nome} a ${Math.round(estacao.dist_m)} m` : "";
+  return `<b>${a.endereco || "?"}${a.numero ? ", " + a.numero : ""}</b><br>${a.bairro || ""}<br>
+          ${a.data || ""} ${a.hora || ""} · ${a.natureza || ""}<br>${ciclo}<br>${est}`;
+}
+
+function mostrar(a, local, ciclovias, estacao, novo) {
+  if (vistos.has(a.protocolo)) return;
+
+  const dentro = naCiclovia(ciclovias);
+
+  if (local && local.lat != null) {
+    const m = L.circleMarker([local.lat, local.lon], {
+      radius: 7, color: dentro ? "#d92d20" : "#1570ef", fillOpacity: 0.7
+    }).addTo(mapa).bindPopup(descricao(a, ciclovias, estacao));
+    vistos.set(a.protocolo, m);
+    if (novo) { mapa.panTo([local.lat, local.lon]); m.openPopup(); }
+  } else {
+    vistos.set(a.protocolo, null);
+  }
+
+  const el = document.createElement("div");
+  el.className = "item" + (novo ? " novo" : "");
+  el.innerHTML = `<b>${a.endereco || "Endereço desconhecido"}</b>
+    <small>${a.bairro || ""} · ${a.data || ""} ${a.hora || ""}</small>
+    <span class="tag ${dentro ? "sim" : "nao"}">${dentro ? "em ciclovia" : "fora da ciclovia"}</span>
+    ${estacao && estacao.no_raio ? '<span class="tag nao">estação perto</span>' : ""}`;
+  el.onclick = () => { const m = vistos.get(a.protocolo); if (m) { mapa.panTo(m.getLatLng()); m.openPopup(); } };
+  lista.prepend(el);
+}
+
+async function carregarResumo() {
+  const r = await (await fetch(`${API}/api/resumo`)).json();
+  document.getElementById("n-total").textContent = r.acidentes_bike;
+  document.getElementById("n-geo").textContent = r.geocodificados;
+  document.getElementById("n-ciclo").textContent = r.em_ciclovia;
+  document.getElementById("n-est").textContent = r.com_estacao_no_raio;
+}
+
+async function carregarHistorico() {
+  const lote = await (await fetch(`${API}/api/acidentes?limite=500`)).json();
+  lote.reverse().forEach(a => mostrar(a, { lat: a.lat, lon: a.lon }, a.ciclovias, a.estacao, false));
+}
+
+function ao_evento(e, novo) {
+  mostrar(e.acidente, e.analise.local, e.analise.ciclovias, e.analise.estacao, novo);
+  carregarResumo();
+}
+
+const cliente = mqtt.connect(BROKER);
+cliente.on("connect", () => {
+  document.getElementById("estado").textContent = "ao vivo";
+  cliente.subscribe("bikesafe/app/#");
+});
+cliente.on("close", () => document.getElementById("estado").textContent = "sem conexão com o broker");
+cliente.on("message", (topico, payload) => {
+  const dado = JSON.parse(payload.toString());
+  if (topico === "bikesafe/app/acidente") ao_evento(dado, true);
+  if (topico === "bikesafe/app/ultimos") dado.forEach(e => ao_evento(e, false));
+});
+const corDoTipo = tipo => (tipo || "").toLowerCase().includes("faixa") ? "#f79009" : "#12b76a";
+
+async function carregarCiclovias() {
+  try {
+    const geojson = await (await fetch(`${API}/api/ciclovias`)).json();
+    const camada = L.geoJSON(geojson, {
+      style: f => ({ color: corDoTipo(f.properties.tipo), weight: 3, opacity: 0.8 }),
+      onEachFeature: (f, l) => l.bindPopup(
+        `<b>${f.properties.rota || "Rota"}</b><br>${f.properties.tipo || ""} · rede ${f.properties.rede}`)
+    }).addTo(mapa);
+    camada.bringToBack();   // os acidentes ficam por cima das linhas
+    L.control.layers(null, { "Ciclovias e ciclofaixas": camada }).addTo(mapa);
+  } catch (e) { /* sem rotas, o mapa segue só com os acidentes */ }
+}
+
+carregarResumo().then(carregarCiclovias).then(carregarHistorico).catch(() =>
+  document.getElementById("estado").textContent = "API indisponível");
+</script>
+</body>
+</html>

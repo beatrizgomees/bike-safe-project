@@ -1,0 +1,546 @@
+{
+"AV CAXANGA|": {
+"lat": -8.0307286,
+"lon": -34.956594,
+"precisao": "rua"
+},
+"RUA JOSE BONIFACIO|1315": {
+"lat": -8.0401228,
+"lon": -34.9101499,
+"precisao": "endereco"
+},
+"AV BEBERIBE|": {
+"lat": -8.0044738,
+"lon": -34.8951262,
+"precisao": "rua"
+},
+"AV CRUZ CABUGA|": {
+"lat": -8.0406055,
+"lon": -34.8720553,
+"precisao": "rua"
+},
+"RUA SAO MIGUEL|516": {
+"lat": -8.0801692,
+"lon": -34.9113762,
+"precisao": "endereco"
+},
+"AV MAURICIO DE NASSAU|243": {
+"lat": -8.0375541,
+"lon": -34.9334897,
+"precisao": "endereco"
+},
+"RUA CORREGO DA JAQUEIRA|8": {
+"lat": -8.0076771,
+"lon": -34.9014075,
+"precisao": "endereco"
+},
+"AV DANTAS BARRETO|": {
+"lat": -8.066974,
+"lon": -34.8795079,
+"precisao": "rua"
+},
+"AV CAXANGA|642": {
+"lat": -8.0537621,
+"lon": -34.9145394,
+"precisao": "endereco"
+},
+"AV BEIRA RIO|": {
+"lat": -8.0670274,
+"lon": -34.9009323,
+"precisao": "rua"
+},
+"RUA CANTORA CLARA NUNES|": {
+"lat": -8.0438854,
+"lon": -34.9191322,
+"precisao": "rua"
+},
+"AV GENERAL MAC ARTHUR|": {
+"lat": -8.1108652,
+"lon": -34.9052923,
+"precisao": "rua"
+},
+"AV GOVERNADOR AGAMENON MAGALHAES|": {
+"lat": -8.049962,
+"lon": -34.8941334,
+"precisao": "rua"
+},
+"RUA SAO MIGUEL|795": {
+"lat": -8.0807728,
+"lon": -34.9175467,
+"precisao": "endereco"
+},
+"AV FREI MATIAS TEVES|": {
+"lat": -8.0631029,
+"lon": -34.8963672,
+"precisao": "rua"
+},
+"AV RUI BARBOSA|1104": {
+"lat": -8.0428048,
+"lon": -34.9014257,
+"precisao": "endereco"
+},
+"AV DOIS RIOS|": {
+"lat": -8.1160205,
+"lon": -34.9407274,
+"precisao": "rua"
+},
+"RUA MANOEL DE BRITO|": {
+"lat": -8.088881,
+"lon": -34.8905114,
+"precisao": "rua"
+},
+"RUA JORNAL VANGUARDA|1360": {
+"lat": -8.1026003,
+"lon": -34.8878677,
+"precisao": "endereco"
+},
+"RUA LEANDRO BARRETO|692": {
+"lat": -8.0801972,
+"lon": -34.9416228,
+"precisao": "endereco"
+},
+"RUA VELHA|": {
+"lat": -8.0631724,
+"lon": -34.8868763,
+"precisao": "rua"
+},
+"AV NORTE MIGUEL ARRAES DE ALENCAR|7070": {
+"lat": -8.0310802,
+"lon": -34.898387,
+"precisao": "endereco"
+},
+"AV BEBERIBE|2151": {
+"lat": -8.0306802,
+"lon": -34.8923689,
+"precisao": "endereco"
+},
+"AV JOAO CABRAL DE MELO NETO|384": {
+"lat": -8.076614,
+"lon": -34.9309607,
+"precisao": "endereco"
+},
+"RUA JOAO PAULO II|": {
+"lat": -8.1038967,
+"lon": -34.9378954,
+"precisao": "rua"
+},
+"RUA GENERAL EDSON AMANCIO RAMALHO|": {
+"lat": -8.1116483,
+"lon": -34.8999746,
+"precisao": "rua"
+},
+"VIADUTO CAPITAO TEMUDO|": {
+"lat": -8.0729931,
+"lon": -34.8941435,
+"precisao": "rua"
+},
+"PTE GOVERNADOR PAULO GUERRA|": null,
+"AV BICENTENARIO DA REVOLUCAO FRANCESA|185": {
+"lat": -8.0603153,
+"lon": -34.9333305,
+"precisao": "endereco"
+},
+"AV RECIFE|3030": {
+"lat": -8.1190631,
+"lon": -34.9212818,
+"precisao": "endereco"
+},
+"AV DOM JOAO VI|": {
+"lat": -8.1181171,
+"lon": -34.9061832,
+"precisao": "rua"
+},
+"RUA ANTONIO FALCAO|795": {
+"lat": -8.1138345,
+"lon": -34.8995899,
+"precisao": "endereco"
+},
+"RUA DIANOPOLIS|": {
+"lat": -8.0475612,
+"lon": -34.9177567,
+"precisao": "rua"
+},
+"RUA DA SAUDADE|": {
+"lat": -8.0583143,
+"lon": -34.8809164,
+"precisao": "rua"
+},
+"RUA SEBASTIAO ALVES|144": {
+"lat": -8.0317417,
+"lon": -34.9062033,
+"precisao": "endereco"
+},
+"RUA ANTONIO CARNEIRO|266": {
+"lat": -8.0865141,
+"lon": -34.9259222,
+"precisao": "endereco"
+},
+"RUA ALTO JOSE BONIFACIO|": {
+"lat": -8.1155005,
+"lon": -34.9629685,
+"precisao": "rua"
+},
+"RUA VIDAL DE NEGREIROS|": {
+"lat": -8.0685815,
+"lon": -34.8801915,
+"precisao": "rua"
+},
+"RUA DELMIRO GOUVEIA|": {
+"lat": -8.0632847,
+"lon": -34.931185,
+"precisao": "rua"
+},
+"AV ENGENHEIRO ABDIAS DE CARVALHO|": {
+"lat": -8.0621416,
+"lon": -34.918542,
+"precisao": "rua"
+},
+"AV DR JAYME DA FONTE|203": {
+"lat": -8.0396898,
+"lon": -34.8788019,
+"precisao": "endereco"
+},
+"AV AFONSO OLINDENSE|692": {
+"lat": -8.0369101,
+"lon": -34.9565973,
+"precisao": "endereco"
+},
+"AV AFONSO OLINDENSE|": {
+"lat": -8.0376139,
+"lon": -34.95679,
+"precisao": "rua"
+},
+"RUA MANOEL ESTEVAO DA COSTA|254": {
+"lat": -8.0489736,
+"lon": -34.9410559,
+"precisao": "endereco"
+},
+"RUA AURORA|703": {
+"lat": -7.9939405,
+"lon": -34.9322645,
+"precisao": "endereco"
+},
+"RUA DOS PALMARES|": {
+"lat": -8.0499469,
+"lon": -34.8877195,
+"precisao": "rua"
+},
+"AV NORTE MIGUEL ARRAES DE ALENCAR|1172": {
+"lat": -8.043688,
+"lon": -34.8825325,
+"precisao": "endereco"
+},
+"RUA VASCO DA GAMA|716": {
+"lat": -8.0152221,
+"lon": -34.9200643,
+"precisao": "endereco"
+},
+"AV VISCONDE DE SUASSUNA|": {
+"lat": -8.0507063,
+"lon": -34.8890635,
+"precisao": "rua"
+},
+"AV GENERAL SAN MARTIN|": {
+"lat": -8.051641,
+"lon": -34.9217523,
+"precisao": "rua"
+},
+"AV RECIFE|": {
+"lat": -8.1175037,
+"lon": -34.922647,
+"precisao": "rua"
+},
+"RUA FRANCISCO VALPASSOS|216": {
+"lat": -8.0858682,
+"lon": -34.8828936,
+"precisao": "endereco"
+},
+"AV RIO LARGO|": {
+"lat": -8.1125223,
+"lon": -34.9519161,
+"precisao": "rua"
+},
+"VIADUTO TANCREDO NEVES|": {
+"lat": -8.1230638,
+"lon": -34.9138901,
+"precisao": "rua"
+},
+"RUA IBIPORA|": {
+"lat": -8.0728931,
+"lon": -34.8966404,
+"precisao": "rua"
+},
+"AV DEZESSETE DE AGOSTO|": {
+"lat": -8.0364162,
+"lon": -34.9138875,
+"precisao": "rua"
+},
+"RUA DR JOSE MARIANO|": {
+"lat": -8.062742,
+"lon": -34.8820886,
+"precisao": "rua"
+},
+"PRC GOVERNADOR PAULO GUERRA|": null,
+"AV ENGENHEIRO DOMINGOS FERREIRA|4811": {
+"lat": -8.1294126,
+"lon": -34.9016865,
+"precisao": "endereco"
+},
+"AV SUL|1036": {
+"lat": -8.0730914,
+"lon": -34.8832792,
+"precisao": "endereco"
+},
+"RUA BENFICA|1116": {
+"lat": -8.0573249,
+"lon": -34.9086598,
+"precisao": "endereco"
+},
+"AV CONSELHEIRO AGUIAR|": {
+"lat": -8.0899733,
+"lon": -34.8831951,
+"precisao": "rua"
+},
+"AV DES GUERRA BARRETO|": null,
+"RUA JOSE BONIFACIO|205": {
+"lat": -8.0491621,
+"lon": -34.9066755,
+"precisao": "endereco"
+},
+"RUA DONA ELVIRA|": {
+"lat": -8.0336774,
+"lon": -34.8898172,
+"precisao": "rua"
+},
+"RUA SANTANA|": {
+"lat": -8.0126697,
+"lon": -34.9074923,
+"precisao": "rua"
+},
+"RUA PADRE LEMOS|518": {
+"lat": -8.0244651,
+"lon": -34.9178696,
+"precisao": "endereco"
+},
+"VDO PAPA JOAO PAULO II|": null,
+"RUA AMELIA|": {
+"lat": -8.045036,
+"lon": -34.9008538,
+"precisao": "rua"
+},
+"EST VELHA DE AGUA FRIA|571": null,
+"RUA PALMARES|": {
+"lat": -8.0945033,
+"lon": -34.9365368,
+"precisao": "rua"
+},
+"RUA TELES JUNIOR|366": {
+"lat": -8.0378784,
+"lon": -34.8958884,
+"precisao": "endereco"
+},
+"RUA SAO MIGUEL|": {
+"lat": -8.0803286,
+"lon": -34.9121805,
+"precisao": "rua"
+},
+"RUA GENERAL JOSE SEMEAO|": {
+"lat": -8.0556795,
+"lon": -34.8868415,
+"precisao": "rua"
+},
+"AV MARECHAL MASCARENHAS DE MORAES|298": {
+"lat": -8.085422,
+"lon": -34.9075102,
+"precisao": "endereco"
+},
+"RUA CARLOS GOMES|365": {
+"lat": -8.0632654,
+"lon": -34.9133359,
+"precisao": "endereco"
+},
+"AV NORTE MIGUEL ARRAES DE ALENCAR|": {
+"lat": -8.0311665,
+"lon": -34.8984335,
+"precisao": "rua"
+},
+"RUA DO PEIXOTO|": {
+"lat": -8.0705949,
+"lon": -34.8844206,
+"precisao": "rua"
+},
+"RUA JOAO TUDE DE MELO|": {
+"lat": -8.0353691,
+"lon": -34.9092592,
+"precisao": "rua"
+},
+"PRC DA CONVENCAO|": null,
+"RUA JERONIMO VILELA|803": {
+"lat": -8.0222877,
+"lon": -34.8785677,
+"precisao": "endereco"
+},
+"RUA DE APIPUCOS|": {
+"lat": -8.0209074,
+"lon": -34.9352267,
+"precisao": "rua"
+},
+"AV JOAO DE BARROS|": {
+"lat": -8.0401476,
+"lon": -34.8920214,
+"precisao": "rua"
+},
+"AV ANTONIO DE GOES|": {
+"lat": -8.0845925,
+"lon": -34.8873734,
+"precisao": "rua"
+},
+"RUA DR VALDIR PESSOA|": {
+"lat": -8.0896436,
+"lon": -34.9050355,
+"precisao": "rua"
+},
+"RUA DA PAZ|125": {
+"lat": -7.9865081,
+"lon": -34.9213692,
+"precisao": "endereco"
+},
+"AV BEIRA RIO|591": {
+"lat": -8.0513214,
+"lon": -34.9051726,
+"precisao": "endereco"
+},
+"AV NORTE MIGUEL ARRAES DE ALENCAR|4807": {
+"lat": -8.0251023,
+"lon": -34.9086628,
+"precisao": "endereco"
+},
+"EST DO ENCANAMENTO|277": null,
+"AV BEBERIBE|2329": {
+"lat": -8.0213189,
+"lon": -34.894295,
+"precisao": "endereco"
+},
+"RUA SAO MIGUEL|1719": {
+"lat": -8.0815117,
+"lon": -34.9220875,
+"precisao": "endereco"
+},
+"AV CONS ROSA E SILVA|707": {
+"lat": -8.0449915,
+"lon": -34.8973347,
+"precisao": "endereco"
+},
+"RUA DOIS IRMAOS|": {
+"lat": -7.9828912,
+"lon": -34.9149953,
+"precisao": "rua"
+},
+"AV NORTE MIGUEL ARRAES DE ALENCAR|7163": {
+"lat": -8.0312917,
+"lon": -34.8981689,
+"precisao": "endereco"
+},
+"LARGO DA PAZ|": {
+"lat": -8.0810361,
+"lon": -34.9047722,
+"precisao": "rua"
+},
+"RUA MANUEL DE MEDEIROS|": {
+"lat": -8.015858,
+"lon": -34.9464781,
+"precisao": "rua"
+},
+"PRC DA REPUBLICA|": null,
+"RUA CAPITAO LIMA|": {
+"lat": -8.0539381,
+"lon": -34.8782755,
+"precisao": "rua"
+},
+"EST DO BARBALHO|1038": null,
+"RUA BARAO DE SANTO ANGELO|55": {
+"lat": -8.0871516,
+"lon": -34.8904329,
+"precisao": "endereco"
+},
+"AV RECIFE|1500": {
+"lat": -8.0870358,
+"lon": -34.930852,
+"precisao": "endereco"
+},
+"RUA IMPERADOR PEDRO SEGUNDO|": {
+"lat": -8.0628942,
+"lon": -34.8769992,
+"precisao": "rua"
+},
+"RUA DA AURORA|": {
+"lat": -8.0592486,
+"lon": -34.8798363,
+"precisao": "rua"
+},
+"TRV SAO MIGUEL|": {
+"lat": -8.0902645,
+"lon": -34.8899693,
+"precisao": "rua"
+},
+"AV PROFESSOR JOSE DOS ANJOS|47": {
+"lat": -8.0266094,
+"lon": -34.9072623,
+"precisao": "endereco"
+},
+"RUA DO HOSPICIO|384": {
+"lat": -8.0557455,
+"lon": -34.8825849,
+"precisao": "endereco"
+},
+"RUA FRANKLIN TAVORA|800": {
+"lat": -8.0274342,
+"lon": -34.8787357,
+"precisao": "endereco"
+},
+"AV MAURICIO DE NASSAU|1289": {
+"lat": -8.0447023,
+"lon": -34.922401,
+"precisao": "endereco"
+},
+"RUA PETRONILA BOTELHO|": {
+"lat": -8.026794,
+"lon": -34.8901553,
+"precisao": "rua"
+},
+"RUA TITO ROSAS|": {
+"lat": -8.0342482,
+"lon": -34.9073856,
+"precisao": "rua"
+},
+"AV MARECHAL MASCARENHAS DE MORAES|": {
+"lat": -8.1021362,
+"lon": -34.9104543,
+"precisao": "rua"
+},
+"RUA BENFICA|650": {
+"lat": -8.0578232,
+"lon": -34.9048861,
+"precisao": "endereco"
+},
+"RUA REZENDE|": {
+"lat": -8.0356888,
+"lon": -34.9309733,
+"precisao": "rua"
+},
+"AV DR JOSE RUFINO|3014": {
+"lat": -8.0922346,
+"lon": -34.9373731,
+"precisao": "endereco"
+},
+"RUA TREZE DE JUNHO|12": {
+"lat": -8.0295871,
+"lon": -34.8968476,
+"precisao": "endereco"
+},
+"AV ENGENHEIRO DOMINGOS FERREIRA|": {
+"lat": -8.1153232,
+"lon": -34.8953125,
+"precisao": "rua"
+}
+}
