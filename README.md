@@ -23,33 +23,6 @@ Sistema distribuído que transforma os **dados abertos de acidentes de trânsito
 
 ### Arquitetura
 
-### Opção B — cada módulo em um terminal
-
-Útil para depurar. Suba só a infraestrutura:
-
-```powershell
-docker compose up -d --wait postgres mosquitto
-```
-
-Depois, **cada comando em um terminal próprio**, com o ambiente virtual ativado e na raiz do projeto, nesta ordem:
-
-```powershell
-# terminal 1 — API (porta 8000)
-py -m src.api.api
-
-# terminal 2 — Módulo de Processamento
-py -m src.processing.modulo_processamento
-
-# terminal 3 — Sensor Virtual (publica as bases e os acidentes)
-py -m src.sensor.sensor_virtual
-```
-
-O MP precisa estar rodando **antes** do SV, porque o broker não guarda as mensagens das bases para quem entrar depois.
-
-Se rodar fora do `main.py`, o schema precisa ter sido aplicado uma vez:
-
-```powershell
-docker compose exec -T postgres psql -U admin -d bikesafe < sql/schema.sql
 ```
                  bases abertas do Recife
                           │
