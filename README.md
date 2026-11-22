@@ -144,7 +144,6 @@ bike-safe-project/
 | Python 3.11 ou superior | Backend | `py --version` (Windows) ou `python3 --version` |
 | Docker Desktop (com Compose v2) | PostgreSQL e Mosquitto | `docker --version` e `docker compose version` |
 | Flutter 3.22 ou superior | Aplicação mobile | `flutter --version` |
-| Android Studio com um emulador | Rodar o app | Device Manager do Android Studio |
 | Internet | Baixar as bases, geocodificar e baixar os tiles do mapa | — |
 
 O **Docker Desktop precisa estar aberto** antes de rodar o backend. As portas **5432** (PostgreSQL), **1883** (MQTT) e **8000** (API) precisam estar livres.
