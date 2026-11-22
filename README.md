@@ -1,27 +1,265 @@
-# Middleware Virtual — Sistema Distribuído (Recife)
+# Bike Safe
 
-Middleware virtual que lê e processa 3 bases de dados
-abertos da Prefeitura do Recife a partir de arquivos JSON locais (sem
-banco de dados, sem servidor, sem chamadas de rede).
+Sistema distribuído que transforma os **dados abertos de acidentes de trânsito do Recife** em informação útil para o ciclista. Cada acidente com bicicleta é localizado no mapa e cruzado com a **malha cicloviária** (ciclovias e ciclofaixas) e com as **estações de bicicleta compartilhada**. O resultado chega a um **aplicativo para celular** em tempo real.
 
-## Bases de dados
+## Sobre o projeto
 
-Os arquivos em `data/` seguem o mesmo formato bruto devolvido pela API do
-[Portal de Dados Abertos do Recife](https://dados.recife.pe.gov.br) (CKAN):
+**Problema.** A Prefeitura do Recife publica os acidentes de trânsito, a malha cicloviária e as estações de bicicleta em bases separadas. Nenhuma delas responde perguntas simples para quem pedala: onde os acidentes com ciclistas acontecem? Ocorrem dentro ou fora da ciclovia? Há algum perto de mim?
 
-### Saída de exemplo
+**Objetivo.** Juntar essas bases, enriquecer cada acidente com a sua relação com a infraestrutura cicloviária e apresentar isso ao ciclista, como parte de uma estratégia de conscientização para apoiar a escolha de rotas.
+
+**O que o sistema faz:**
+
+- Seleciona, nas bases abertas, os acidentes que envolvem ciclistas.
+- Localiza cada acidente (pela coordenada da base ou pelo endereço) e mede a distância até a ciclovia ou ciclofaixa mais próxima (**"na ciclovia" = até 30 m**) e até a estação de bicicleta mais próxima (**entorno de 300 m**).
+- Grava os resultados em um banco de dados e os entrega ao app em tempo real.
+- No app, o usuário vê:
+  - um resumo com os totais e a proporção de acidentes em ciclovia;
+  - um mapa com os acidentes agrupados, as ciclovias, as ciclofaixas e as estações, com filtros por camada;
+  - o detalhe de cada acidente;
+  - a estação mais próxima de onde ele está e os acidentes ao redor dela.
+- O usuário também **reporta ocorrências** (colisão, queda, buraco, alagamento e outras), com a localização e o endereço preenchidos automaticamente.
+- Se o canal de tempo real cair, o app **continua funcionando**: passa a consultar a API periodicamente e volta ao tempo real quando a conexão retorna.
+
+### Arquitetura
 
 ```
---- CONSOLIDADO DASHBOARD ---
-Cidade:              RECIFE
-Malha cicloviária:   3 rotas (11.6 km)
-Estações Bike PE:    3 (53 vagas)
-Acidentes:           4 (3 com vítima, 1 fatais)
-  com bicicleta:     2
------------------------------
+                 bases abertas do Recife
+                          │
+                          ▼
+┌────────────────┐  MQTT  ┌──────────────┐  MQTT  ┌──────────────────────────┐
+│ Sensor Virtual │ ─────▶ │  Middleware  │ ─────▶ │ Módulo de Processamento  │
+│      (SV)      │        │ (Mosquitto)  │ ◀───── │          (MP)            │
+└────────────────┘        └──────┬───────┘        └────────────┬─────────────┘
+                                 │ tempo real                  │ grava
+                                 ▼                             ▼
+                        ┌─────────────────┐   HTTP   ┌───────────┐   SQL   ┌────────────┐
+                        │ Aplicação mobile│ ◀──────▶ │    API    │ ◀─────▶ │ PostgreSQL │
+                        │    (Flutter)    │ consulta │           │         │            │
+                        └─────────────────┘ e reporte└───────────┘         └────────────┘
 ```
 
+- **Sensor Virtual:** é um sensor de software. Consulta as bases abertas da cidade e publica as bases de referência e os acidentes, um a um, no middleware.
+- **Middleware (broker MQTT):** faz a comunicação por publicação e assinatura. Nenhum componente conhece o endereço do outro.
+- **Módulo de Processamento:** assina os acidentes, enriquece cada um, grava no banco e publica o resultado para o app.
+- **API:** é a única porta de leitura do banco. Atende às consultas do app e recebe os reportes dos usuários.
+- **Aplicação mobile:** recebe os acidentes em tempo real (MQTT) e consulta o histórico pela API (HTTP).
 
-- Cruzar acidentes/ciclovias por bairro (`bairro`/`bairros`).
-- Persistir o dashboard processado em um arquivo de saída (JSON/CSV).
-- Buscar os dados diretamente da API do portal (versão com `requests`).
+## Tecnologias
+
+### Backend
+
+| Tecnologia | Papel no projeto |
+|---|---|
+| **Python 3.11+** | Linguagem do Sensor Virtual, do Módulo de Processamento e da API, com orientação a objetos |
+| **MQTT 3.1.1** | Protocolo de mensagens por publicação e assinatura, com QoS 1 (entrega pelo menos uma vez) |
+| **Eclipse Mosquitto** | Broker MQTT (middleware), em contêiner |
+| **paho-mqtt** | Cliente MQTT dos módulos em Python |
+| **PostgreSQL** | Banco de dados relacional, em contêiner |
+| **psycopg** (`psycopg[binary]`) | Acesso ao PostgreSQL a partir do Python |
+| **http.server** (biblioteca padrão) | Servidor da API HTTP, com respostas em JSON |
+| **Nominatim (OpenStreetMap)** | Conversão de endereço em coordenada (geocodificação), com cache em disco |
+| **requests**, **python-dotenv** | Download das bases abertas e leitura do `.env` |
+| **Docker / Docker Compose** | Sobem o PostgreSQL e o Mosquitto |
+
+### Aplicação mobile
+
+| Tecnologia | Papel no projeto |
+|---|---|
+| **Flutter / Dart** | Aplicação para celular (Android) |
+| **flutter_map** + **latlong2** | Mapa (tiles do OpenStreetMap), camadas e cálculo de distâncias |
+| **mqtt_client** | Recebe os acidentes em tempo real pelo broker |
+| **http** | Consultas e envio de reportes para a API |
+| **geolocator** | Localização do celular (estação mais próxima e local do reporte) |
+| **shared_preferences** | Guarda sessão, servidor, tema e preferências no aparelho |
+| **Nominatim (geocodificação reversa)** | Converte a localização do reporte em rua, bairro e CEP |
+
+### Paradigma de comunicação
+
+O sistema é **híbrido**:
+- **Publicação e assinatura (MQTT)** para os eventos, que formam um fluxo contínuo e chegam a vários receptores.
+- **Requisição e resposta (HTTP/REST)** para as consultas e os reportes, que são operações pontuais e precisam de resposta imediata.
+
+## Estrutura de pastas
+
+```
+bike-safe-project/
+├── main.py                    # orquestrador: sobe a infra, o MP e a API e dispara o SV
+├── compose.yaml               # PostgreSQL + Mosquitto
+├── dockerfile
+├── requirements.txt           # dependências Python
+├── .env.example               # modelo das variáveis de ambiente (copiar para .env)
+├── .gitignore / .dockerignore
+├── src/
+│   ├── collector/             # coleta das bases abertas
+│   │   ├── base_collector.py
+│   │   ├── acidentes_collector.py
+│   │   ├── ciclovias_collector.py
+│   │   ├── estacoes_collector.py
+│   │   ├── geojson_collector.py
+│   │   └── rotas_collector.py
+│   ├── sensor/                # Sensor Virtual
+│   │   ├── sensor_virtual.py
+│   │   └── filtros.py         # seleção dos acidentes com ciclista
+│   ├── mqtt/                  # cliente MQTT, configuração e tópicos
+│   │   ├── cliente.py
+│   │   ├── config.py
+│   │   └── topicos.py
+│   ├── processing/            # Módulo de Processamento
+│   │   ├── modulo_processamento.py
+│   │   ├── acidentes_ciclovias.py   # cruzamento com ciclovias e estações
+│   │   └── fontes_memoria.py        # bases de referência em memória
+│   ├── database/
+│   │   └── banco.py           # acesso ao PostgreSQL
+│   ├── api/
+│   │   ├── api.py             # API HTTP
+│   │   └── auth.py            # cadastro e login
+│   ├── infra/
+│   │   └── docker_db.py       # sobe o Docker, aplica o schema e espera o broker
+│   └── utils/
+│       └── init.sql           # schema do banco (tabelas e views)
+└── app/                       # aplicação mobile (Flutter)
+    ├── pubspec.yaml
+    ├── android/
+    └── lib/
+        ├── main.dart                  # entrada: login ou app
+        ├── config.dart                # servidor, sessão e preferências
+        ├── api_service.dart           # chamadas à API
+        ├── reportes_api.dart          # listar e enviar reportes
+        ├── mqtt_service.dart          # tempo real e modo offline
+        ├── dashboard_controller.dart  # estado do app (histórico + tempo real)
+        ├── models/                    # acidente, estação, resumo, reporte
+        ├── location/                  # localização do celular e endereço
+        ├── view_controllers/          # lógica das telas de login e reporte
+        ├── components/                # partes reutilizáveis (lista, detalhe etc.)
+        └── telas/                     # home, mapa, reportados, reportar, ajustes, login
+```
+
+## Como rodar
+
+### Pré-requisitos
+
+| Ferramenta | Para quê | Como conferir |
+|---|---|---|
+| Python 3.11 ou superior | Backend | `py --version` (Windows) ou `python3 --version` |
+| Docker Desktop (com Compose v2) | PostgreSQL e Mosquitto | `docker --version` e `docker compose version` |
+| Flutter 3.22 ou superior | Aplicação mobile | `flutter --version` |
+| Android Studio com um emulador | Rodar o app | Device Manager do Android Studio |
+| Internet | Baixar as bases, geocodificar e baixar os tiles do mapa | — |
+
+O **Docker Desktop precisa estar aberto** antes de rodar o backend. As portas **5432** (PostgreSQL), **1883** (MQTT) e **8000** (API) precisam estar livres.
+
+### 1. Backend
+
+**Configuração (uma vez só)**, no PowerShell, na raiz do projeto:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+
+copy .env.example .env
+```
+
+Abra o `.env` e defina pelo menos a senha do banco, sem espaços e sem aspas:
+
+```
+POSTGRES_PASSWORD=uma_senha_qualquer
+```
+
+Se o PowerShell bloquear a ativação do ambiente virtual, rode `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+
+**Execução.** Com o Docker aberto e o ambiente virtual ativado:
+
+```powershell
+python main.py
+```
+
+O `main.py` faz, em ordem:
+1. Sobe o PostgreSQL e o Mosquitto.
+2. Aplica o schema.
+3. Inicia o Módulo de Processamento e a API, cada um em seu processo.
+4. Dispara o Sensor Virtual, que publica as bases e transmite os acidentes.
+
+Na primeira vez, o Docker baixa as imagens e a geocodificação dos endereços demora mais.
+
+Para rodar cada componente separado, útil para depurar, use um terminal para cada um, na raiz do projeto:
+
+```powershell
+python -m src.api.api
+python -m src.processing.modulo_processamento
+python -m src.sensor.sensor_virtual   # por último: o MP precisa estar rodando antes
+```
+
+**Conferindo:**
+
+| O quê | Como |
+|---|---|
+| Contêineres | `docker compose ps`: `postgres` e `mosquitto` como *healthy* |
+| API | <http://localhost:8000/api/resumo> deve devolver um JSON com os totais |
+| Acidentes | <http://localhost:8000/api/acidentes?limite=5> |
+| Mensagens MQTT | MQTT Explorer em `localhost:1883`, assinando `bikesafe/#` |
+
+**Parando:** `Enter` ou `Ctrl+C` no terminal do `main.py`, depois `docker compose stop`. O comando `docker compose down -v` também apaga o banco.
+
+### 2. Aplicação mobile
+
+Na pasta `app/`:
+
+```powershell
+flutter pub get
+flutter run
+```
+
+Com o emulador aberto, o `flutter run` instala e abre o app. Na tela de login, o botão **Servidor** define onde está o backend:
+
+| O app roda em | Endereço do servidor |
+|---|---|
+| Emulador Android | `10.0.2.2` (é o seu computador visto de dentro do emulador) |
+| Celular de verdade | O IP do computador na rede (`ipconfig`), com os dois na mesma rede e as portas 8000 e 1883 liberadas no firewall |
+
+**Para testar a localização no emulador:** abra os *Extended controls* (os três pontinhos), vá em **Location**, escolha um ponto do Recife (por exemplo `-8.0631, -34.8711`) e clique em **Set location**.
+
+O `AndroidManifest.xml` já precisa ter as permissões de internet e de localização e `android:usesCleartextTraffic="true"`, porque a API usa HTTP.
+
+## API
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/resumo` | Totais: acidentes com bicicleta, localizados, em ciclovia e com estação no entorno |
+| GET | `/api/acidentes?limite=N` | Acidentes processados |
+| GET | `/api/acidentes/<protocolo>` | Detalhe de um acidente |
+| GET | `/api/ciclovias` | Trechos de ciclovias e ciclofaixas (geometria) |
+| GET | `/api/estacoes` | Estações de bicicleta |
+| GET | `/api/reportes?dispositivo=<id>` | Reportes feitos por um aparelho |
+| POST | `/api/reportes` | Novo reporte: `dispositivo`, `tipo` (um ou mais, separados por vírgula), `lat`, `lon`, `descricao?`, `endereco?` |
+| POST | `/api/auth/registro` | Cria uma conta |
+| POST | `/api/auth/login` | Entra e devolve um token |
+| GET | `/api/auth/eu` | Confere o token |
+
+Tipos de reporte aceitos: `colisao`, `queda`, `atropelamento`, `quase_acidente`, `buraco`, `alagamento`, `obstrucao`, `iluminacao`, `sinalizacao`, `outro`.
+
+## Tópicos MQTT
+
+Todos os tópicos ficam sob o prefixo `bikesafe/`.
+
+| Tópico | Publica | Assina | Conteúdo |
+|---|---|---|---|
+| `bases/*` e `bases/fim` | Sensor Virtual | Processamento | Bases de referência e aviso de fim da carga |
+| `eventos/acidente` | Sensor Virtual | Processamento | Um acidente por mensagem |
+| `mp/concluido` | Processamento | Sensor Virtual | Aviso de que as bases foram processadas |
+| `app/acidente` | Processamento | App | Acidente já enriquecido |
+| `app/ultimos` | Processamento | App | Os 20 acidentes mais recentes (mensagem retida) |
+| `status/<nome>` | Cada módulo | — | `online` ou `offline` (Last Will) |
+
+## Problemas comuns
+
+| Sintoma | Solução |
+|---|---|
+| `POSTGRES_PASSWORD ... missing a value` | Crie o `.env` na raiz, com `POSTGRES_PASSWORD=...` |
+| `port is already allocated` | Feche o que usa a porta, ou mude `POSTGRES_PUBLISH_PORT` ou `MQTT_PUBLISH_PORT` no `.env` |
+| `error during connect` | Abra o Docker Desktop e espere iniciar |
+| `No module named 'paho'` ou `'psycopg'` | Ative o ambiente virtual e rode `python -m pip install -r requirements.txt` |
+| `No module named src....` | Rode os comandos a partir da raiz do projeto, com `python -m src....` |
+| App não conecta | Confira o endereço do servidor (`10.0.2.2` no emulador) e se a API está no ar |
+| Build do Android falha por versão do Kotlin | Suba a versão do plugin `org.jetbrains.kotlin.android` em `android/settings.gradle.kts` |
