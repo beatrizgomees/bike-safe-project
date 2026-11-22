@@ -1,6 +1,6 @@
 # Bike Safe
 
-Sistema distribuído que transforma os **dados abertos de acidentes de trânsito do Recife** em informação útil para o ciclista. Cada acidente com bicicleta é localizado no mapa e cruzado com a **malha cicloviária** (ciclovias e ciclofaixas) e com as **estações de bicicleta compartilhada**. O resultado chega a um **aplicativo para celular** em tempo real.
+Sistema distribuído que transforma os **dados abertos de acidentes de trânsito do Recife** em informação útil para o ciclista. Cada acidente com bicicleta é localizado no mapa e cruzado com a **malha cicloviária** (ciclovias e ciclofaixas) e com as **estações de bicicleta compartilhada**. O resultado chega a um **aplicativo web**, que roda no navegador, em tempo real.
 
 ## Sobre o projeto
 
@@ -34,8 +34,8 @@ Sistema distribuído que transforma os **dados abertos de acidentes de trânsito
                                  │ tempo real                  │ grava
                                  ▼                             ▼
                         ┌─────────────────┐   HTTP   ┌───────────┐   SQL   ┌────────────┐
-                        │ Aplicação mobile│ ◀──────▶ │    API    │ ◀─────▶ │ PostgreSQL │
-                        │    (Flutter)    │ consulta │           │         │            │
+                        │  Aplicação web  │ ◀──────▶ │    API    │ ◀─────▶ │ PostgreSQL │
+                        │ (Flutter, Chrome)│ consulta │           │         │            │
                         └─────────────────┘ e reporte└───────────┘         └────────────┘
 ```
 
@@ -43,7 +43,7 @@ Sistema distribuído que transforma os **dados abertos de acidentes de trânsito
 - **Middleware (broker MQTT):** faz a comunicação por publicação e assinatura. Nenhum componente conhece o endereço do outro.
 - **Módulo de Processamento:** assina os acidentes, enriquece cada um, grava no banco e publica o resultado para o app.
 - **API:** é a única porta de leitura do banco. Atende às consultas do app e recebe os reportes dos usuários.
-- **Aplicação mobile:** recebe os acidentes em tempo real (MQTT) e consulta o histórico pela API (HTTP).
+- **Aplicação web:** recebe os acidentes em tempo real (MQTT sobre WebSocket) e consulta o histórico pela API (HTTP).
 
 ## Tecnologias
 
@@ -53,7 +53,7 @@ Sistema distribuído que transforma os **dados abertos de acidentes de trânsito
 |---|---|
 | **Python 3.11+** | Linguagem do Sensor Virtual, do Módulo de Processamento e da API, com orientação a objetos |
 | **MQTT 3.1.1** | Protocolo de mensagens por publicação e assinatura, com QoS 1 (entrega pelo menos uma vez) |
-| **Eclipse Mosquitto** | Broker MQTT (middleware), em contêiner |
+| **Eclipse Mosquitto** | Broker MQTT (middleware), em contêiner: porta 1883 (TCP, módulos Python) e 9001 (WebSocket, app no navegador) |
 | **paho-mqtt** | Cliente MQTT dos módulos em Python |
 | **PostgreSQL** | Banco de dados relacional, em contêiner |
 | **psycopg** (`psycopg[binary]`) | Acesso ao PostgreSQL a partir do Python |
@@ -62,16 +62,16 @@ Sistema distribuído que transforma os **dados abertos de acidentes de trânsito
 | **requests**, **python-dotenv** | Download das bases abertas e leitura do `.env` |
 | **Docker / Docker Compose** | Sobem o PostgreSQL e o Mosquitto |
 
-### Aplicação mobile
+### Aplicação web
 
 | Tecnologia | Papel no projeto |
 |---|---|
-| **Flutter / Dart** | Aplicação para celular (Android) |
+| **Flutter / Dart** | Aplicação executada no navegador |
 | **flutter_map** + **latlong2** | Mapa (tiles do OpenStreetMap), camadas e cálculo de distâncias |
-| **mqtt_client** | Recebe os acidentes em tempo real pelo broker |
+| **mqtt_client** | Recebe os acidentes em tempo real pelo broker, por WebSocket |
 | **http** | Consultas e envio de reportes para a API |
-| **geolocator** | Localização do celular (estação mais próxima e local do reporte) |
-| **shared_preferences** | Guarda sessão, servidor, tema e preferências no aparelho |
+| **geolocator** | Localização do usuário (estação mais próxima e local do reporte) |
+| **shared_preferences** | Guarda sessão, servidor, tema e preferências no navegador |
 | **Nominatim (geocodificação reversa)** | Converte a localização do reporte em rua, bairro e CEP |
 
 ### Paradigma de comunicação
@@ -118,18 +118,19 @@ bike-safe-project/
 │   │   └── docker_db.py       # sobe o Docker, aplica o schema e espera o broker
 │   └── utils/
 │       └── init.sql           # schema do banco (tabelas e views)
-└── app/                       # aplicação mobile (Flutter)
+└── app/                       # aplicação web (Flutter)
     ├── pubspec.yaml
-    ├── android/
+    ├── web/
     └── lib/
         ├── main.dart                  # entrada: login ou app
         ├── config.dart                # servidor, sessão e preferências
         ├── api_service.dart           # chamadas à API
         ├── reportes_api.dart          # listar e enviar reportes
         ├── mqtt_service.dart          # tempo real e modo offline
+        ├── mqtt_factory*.dart         # cliente MQTT por WebSocket no navegador
         ├── dashboard_controller.dart  # estado do app (histórico + tempo real)
         ├── models/                    # acidente, estação, resumo, reporte
-        ├── location/                  # localização do celular e endereço
+        ├── location/                  # localização do usuário e endereço
         ├── view_controllers/          # lógica das telas de login e reporte
         ├── components/                # partes reutilizáveis (lista, detalhe etc.)
         └── telas/                     # home, mapa, reportados, reportar, ajustes, login
@@ -141,12 +142,23 @@ bike-safe-project/
 
 | Ferramenta | Para quê | Como conferir |
 |---|---|---|
+| Git | Clonar o projeto | `git --version` |
 | Python 3.11 ou superior | Backend | `py --version` (Windows) ou `python3 --version` |
 | Docker Desktop (com Compose v2) | PostgreSQL e Mosquitto | `docker --version` e `docker compose version` |
-| Flutter 3.22 ou superior | Aplicação mobile | `flutter --version` |
+| Flutter 3.22 ou superior | Aplicação web | `flutter --version` |
+| Google Chrome | Executar o app | `flutter devices` deve listar **Chrome** |
 | Internet | Baixar as bases, geocodificar e baixar os tiles do mapa | — |
 
-O **Docker Desktop precisa estar aberto** antes de rodar o backend. As portas **5432** (PostgreSQL), **1883** (MQTT) e **8000** (API) precisam estar livres.
+O **Docker Desktop precisa estar aberto** antes de rodar o backend. As portas **5432** (PostgreSQL), **1883** (MQTT), **9001** (MQTT sobre WebSocket) e **8000** (API) precisam estar livres.
+
+O app depende do backend (até o login passa pela API), então a ordem é: **clonar → preparar o backend → subir o backend → rodar o app**.
+
+### 0. Clonar o projeto
+
+```powershell
+git clone <url-do-repositorio>
+cd bike-safe-project
+```
 
 ### 1. Backend
 
@@ -173,6 +185,8 @@ Se o PowerShell bloquear a ativação do ambiente virtual, rode `Set-ExecutionPo
 ```powershell
 python main.py
 ```
+
+**Deixe esse terminal aberto** enquanto usa o app.
 
 O `main.py` faz, em ordem:
 1. Sobe o PostgreSQL e o Mosquitto.
@@ -201,25 +215,57 @@ python -m src.sensor.sensor_virtual   # por último: o MP precisa estar rodando 
 
 **Parando:** `Enter` ou `Ctrl+C` no terminal do `main.py`, depois `docker compose stop`. O comando `docker compose down -v` também apaga o banco.
 
-### 2. Aplicação mobile
+### 2. Aplicação web (front)
 
-Na pasta `app/`:
+O navegador não permite conexão TCP direta, só HTTP e WebSocket. Por isso, o app fala com o broker por **MQTT sobre WebSocket, na porta 9001**, e com a API por HTTP, na porta 8000. O Mosquitto já precisa estar com os dois ouvintes, o que o `compose.yaml` do projeto configura:
+
+```
+listener 1883
+listener 9001
+protocol websockets
+```
+
+**Passo 1. Abrir outro terminal** (o do backend continua rodando) e entrar na pasta do app:
+
+```powershell
+cd bike-safe-project\app
+```
+
+**Passo 2. Instalar as dependências** (só na primeira vez, ou quando o `pubspec.yaml` mudar):
 
 ```powershell
 flutter pub get
-flutter run
 ```
 
-Com o emulador aberto, o `flutter run` instala e abre o app. Na tela de login, o botão **Servidor** define onde está o backend:
+**Passo 3. Executar no Chrome:**
 
-| O app roda em | Endereço do servidor |
+```powershell
+flutter run -d chrome
+```
+
+O Chrome abre com o app.
+
+**Passo 4. Configurar o servidor e entrar.** Na tela de login, toque em **Servidor** e preencha:
+
+| Campo | Valor |
 |---|---|
-| Emulador Android | `10.0.2.2` (é o seu computador visto de dentro do emulador) |
-| Celular de verdade | O IP do computador na rede (`ipconfig`), com os dois na mesma rede e as portas 8000 e 1883 liberadas no firewall |
+| Endereço | `localhost` |
+| Porta da API | `8000` |
 
-**Para testar a localização no emulador:** abra os *Extended controls* (os três pontinhos), vá em **Location**, escolha um ponto do Recife (por exemplo `-8.0631, -34.8711`) e clique em **Set location**.
+Depois, toque em **Criar conta** no primeiro acesso, ou em **Entrar** se já tiver conta.
 
-O `AndroidManifest.xml` já precisa ter as permissões de internet e de localização e `android:usesCleartextTraffic="true"`, porque a API usa HTTP.
+**Conferindo:**
+
+| O quê | Como deve estar |
+|---|---|
+| Home | Mostra os totais e os últimos acidentes |
+| Etiqueta no topo | **"Ao vivo"**: o tempo real pelo WebSocket está funcionando |
+| Mapa | Acidentes, ciclovias e ciclofaixas aparecem, com filtros por camada |
+| Localização | O Chrome pede permissão ao usar "Usar minha localização" ou ao reportar |
+
+**Encerrando:** aperte `q` no terminal do `flutter run`. Da próxima vez, basta subir o backend (`python main.py`) e rodar `flutter run -d chrome` na pasta `app/`.
+
+Para gerar uma versão para publicar, rode `flutter build web`. Os arquivos saem em `app/build/web/`. Fora do `localhost`, o site precisa de `https` (para a localização) e o broker de WebSocket seguro (`wss`).
 
 ## API
 
@@ -260,5 +306,9 @@ Todos os tópicos ficam sob o prefixo `bikesafe/`.
 | `error during connect` | Abra o Docker Desktop e espere iniciar |
 | `No module named 'paho'` ou `'psycopg'` | Ative o ambiente virtual e rode `python -m pip install -r requirements.txt` |
 | `No module named src....` | Rode os comandos a partir da raiz do projeto, com `python -m src....` |
-| App não conecta | Confira o endereço do servidor (`10.0.2.2` no emulador) e se a API está no ar |
-| Build do Android falha por versão do Kotlin | Suba a versão do plugin `org.jetbrains.kotlin.android` em `android/settings.gradle.kts` |
+| App mostra "API indisponível" | Confira se o backend está rodando e se o servidor no app é `localhost`, porta `8000`. Teste <http://localhost:8000/api/resumo> |
+| Etiqueta sempre "Offline" | A porta 9001 não está com WebSocket. Confira o `listener 9001` / `protocol websockets` do Mosquitto e se `docker compose ps` mostra `0.0.0.0:9001->9001`. Mesmo assim o app funciona, buscando na API a cada 15 s |
+| Erro de CORS no console do navegador (F12) | Use o `src/api/api.py` mais recente e reinicie a API |
+| Localização não funciona | Libere a localização no cadeado da barra de endereço do Chrome |
+| Mudança no código do app não aparece | Aperte `R` (maiúsculo) no terminal do `flutter run` |
+| `MissingPluginException` | Pare o app, rode `flutter clean` e `flutter pub get`, e execute de novo |
