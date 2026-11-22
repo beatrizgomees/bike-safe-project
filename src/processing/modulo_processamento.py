@@ -25,7 +25,6 @@ class ModuloProcessamento:
         self._fim = None
         self._processando = False
 
-        # referências para tratar acidentes avulsos (preenchidas pela carga ou pelo banco)
         self._cruz = None
         self._trechos = None
         self._estacoes = None
@@ -39,12 +38,9 @@ class ModuloProcessamento:
         self.mqtt.assinar(topicos.EVENTO_ACIDENTE, lambda topico, mensagem: self._eventos.put(mensagem))
         self.mqtt.conectar()
 
-        # fora do callback do MQTT: geocodificar demora e não pode travar a conexão
         threading.Thread(target=self._trabalhar_eventos, daemon=True).start()
 
         print("[MP] pronto. Bases em", topicos.BASES, "| eventos em", topicos.EVENTO_ACIDENTE)
-
-    # ------------------------------------------------------------------ recepção
     def _receber(self, topico, mensagem):
         parte = topico[len(topicos.BASES) + 1:]
 
@@ -53,16 +49,11 @@ class ModuloProcessamento:
                 self._fim = mensagem
             else:
                 self._buffers.setdefault(parte, []).append(mensagem["dado"])
-
             if self._processando or not self._carga_completa():
                 return
-
             self._processando = True
             fim, buffers = self._fim, self._buffers
             self._fim, self._buffers = None, {}
-
-        # fora do callback do MQTT: o cruzamento demora (geocodificação) e não pode
-        # travar a conexão com o broker
         threading.Thread(target=self._processar, args=(fim, buffers), daemon=True).start()
 
     def _carga_completa(self):

@@ -14,7 +14,6 @@ def _num(valor):
 
 
 def _tipo_trecho(trecho):
-    """Tipo do trecho; se vier vazio e a rota começar com 'Ciclofaixa', usa 'Ciclofaixa'."""
     tipo = trecho.get("tipo")
     if tipo:
         return tipo
@@ -25,20 +24,7 @@ def _tipo_trecho(trecho):
 
 
 class CruzamentoAcidentesCiclovias:
-    """Cruza acidentes com bicicleta com as redes de ciclovias.
-
-    Passos:
-      1. pega os acidentes e fica só com os que têm ciclista;
-      2. geocodifica (endereco + numero -> lat/lon);
-      3. para cada rede (permanente, operacional...) acha a ciclovia mais
-         próxima e a distância em metros;
-      4. marca `na_ciclovia_<rede>` se estiver a até `raio_m` metros;
-      5. (opcional) acha a estação de bike mais próxima e quantas estações
-         existem a até `raio_estacao_m` metros do acidente.
-
-    redes: {"permanente": coletor_geojson, "operacional": coletor_geojson}
-    estacoes: EstacoesBikeCollector (opcional)
-    """
+ 
 
     def __init__(self, acidentes, redes, geocodificador=None, raio_m=30,
                  estacoes=None, raio_estacao_m=300):
