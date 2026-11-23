@@ -22,8 +22,10 @@ from src.utils.geo import dentro_do_recife
 
 PAGINA = Path(__file__).resolve().parents[2] / "dashboard" / "index.html"
 
-TIPOS_REPORTE = ("colisao", "queda", "atropelamento", "outro")
-
+TIPOS_REPORTE = (
+    "colisao", "queda", "atropelamento", "quase_acidente",
+    "buraco", "alagamento", "obstrucao", "iluminacao", "sinalizacao", "outro",
+)
 DDL_REPORTES = (
     """CREATE TABLE IF NOT EXISTS reportes (
         id           BIGSERIAL PRIMARY KEY,
